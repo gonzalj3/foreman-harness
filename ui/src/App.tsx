@@ -14,8 +14,10 @@ type Outcome = { decision: string; record: any };
 
 export default function App() {
   const [samples, setSamples] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
   const [workers, setWorkers] = useState<string[]>([]);
   const [idx, setIdx] = useState(0);
+  const [jobIdx, setJobIdx] = useState(0);
   const [worker, setWorker] = useState("fake-worker-v1");
   const [jsonText, setJsonText] = useState("");
   const [running, setRunning] = useState(false);
@@ -29,6 +31,7 @@ export default function App() {
       .then((r) => r.json())
       .then((j) => {
         setSamples(j.samples || []);
+        setJobs(j.job_descriptions || []);
         setWorkers(j.workers || []);
         if (j.samples?.length) setJsonText(JSON.stringify(j.samples[0], null, 2));
       })
@@ -127,6 +130,16 @@ export default function App() {
       <div className="card">
         <div className="row">
           <div>
+            <label>Job description</label>
+            <select value={jobIdx} onChange={(e) => setJobIdx(+e.target.value)}>
+              {jobs.map((j, i) => (
+                <option key={j.id || i} value={i}>
+                  {j.employer} — {j.title}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
             <label>Sample applicant</label>
             <select value={idx} onChange={(e) => setIdx(+e.target.value)}>
               {samples.map((s, i) => (
@@ -156,6 +169,12 @@ export default function App() {
           <label>Applicant JSON (editable)</label>
           <textarea value={jsonText} onChange={(e) => setJsonText(e.target.value)} />
         </div>
+        {jobs[jobIdx] && (
+          <div style={{ marginTop: 10 }}>
+            <label>Selected job JSON</label>
+            <textarea readOnly value={JSON.stringify(jobs[jobIdx], null, 2)} />
+          </div>
+        )}
       </div>
 
       <div className="card">

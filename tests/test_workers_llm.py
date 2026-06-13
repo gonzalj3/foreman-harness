@@ -6,6 +6,7 @@ deterministic and free.
 """
 from education_applicant_verifier.types import Application, Failure
 from education_applicant_verifier.worker import (
+    DeepSeekWorker,
     GroqWorker,
     LLMWorker,
     _build_user_prompt,
@@ -58,3 +59,9 @@ def test_system_prompt_states_constraints():
 def test_worker_names_reflect_model():
     assert LLMWorker("claude-opus-4-8").name == "claude-opus-4-8"
     assert GroqWorker("gemma2-9b-it").name == "gemma2-9b-it"
+    assert DeepSeekWorker("deepseek-chat").name == "deepseek-chat"
+
+
+def test_openai_compatible_providers_configured():
+    assert GroqWorker().KEY_ENV == "GROQ_API_KEY" and "groq.com" in GroqWorker().URL
+    assert DeepSeekWorker().KEY_ENV == "DEEPSEEK_API_KEY" and "deepseek.com" in DeepSeekWorker().URL

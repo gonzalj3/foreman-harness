@@ -173,25 +173,28 @@ class LLMWorker:
         return _proposal_from_json(json.loads(_extract_json(text)), application.id)
 
 
-class GroqWorker:
-    """Open-source model via Groq's OpenAI-compatible API (stdlib only).
-
-    Default model: gemma2-9b-it. Same Worker interface as LLMWorker / FakeWorker,
-    so the harness is unchanged and the two can be swapped live in the demo.
+class _OpenAICompatibleWorker:
+    """Base for any provider that speaks the OpenAI chat-completions shape
+    (Groq, DeepSeek, OpenAI, Together, OpenRouter, ...). Stdlib only — adding a
+    new provider is just three constants. Same Worker interface as everything
+    else, so the harness is unchanged and providers can be swapped live.
     """
 
-    URL = "https://api.groq.com/openai/v1/chat/completions"
+    URL = ""           # chat-completions endpoint
+    KEY_ENV = ""       # env var holding the API key
+    MODEL_ENV = ""     # env var to override the model
+    DEFAULT_MODEL = "" # model id used when MODEL_ENV is unset
 
     def __init__(self, model: str | None = None) -> None:
-        self.model = model or os.environ.get("GROQ_MODEL", "gemma2-9b-it")
+        self.model = model or os.environ.get(self.MODEL_ENV, self.DEFAULT_MODEL)
         self.name = self.model
         self.calls = 0
 
     def propose(self, application: Application, rubric: list[str], prior_failures: list[Failure]) -> Proposal:
         self.calls += 1
-        key = os.environ.get("GROQ_API_KEY")
+        key = os.environ.get(self.KEY_ENV)
         if not key:
-            raise RuntimeError("GROQ_API_KEY not set")
+            raise RuntimeError(f"{self.KEY_ENV} not set")
         body = {
             "model": self.model,
             "messages": [
@@ -207,7 +210,26 @@ class GroqWorker:
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with urllib.request.urlopen(req, timeout=60) as r:
             payload = json.loads(r.read().decode())
         content = payload["choices"][0]["message"]["content"]
         return _proposal_from_json(json.loads(_extract_json(content)), application.id)
+
+
+class GroqWorker(_OpenAICompatibleWorker):
+    """Open-source model via Groq (default: Gemma `gemma2-9b-it`)."""
+
+    URL = "https://api.groq.com/openai/v1/chat/completions"
+    KEY_ENV = "GROQ_API_KEY"
+    MODEL_ENV = "GROQ_MODEL"
+    DEFAULT_MODEL = "gemma2-9b-it"
+
+
+class DeepSeekWorker(_OpenAICompatibleWorker):
+    """DeepSeek via its OpenAI-compatible API (default: `deepseek-chat` = V3;
+    set DEEPSEEK_MODEL=deepseek-reasoner for R1)."""
+
+    URL = "https://api.deepseek.com/chat/completions"
+    KEY_ENV = "DEEPSEEK_API_KEY"
+    MODEL_ENV = "DEEPSEEK_MODEL"
+    DEFAULT_MODEL = "deepseek-chat"

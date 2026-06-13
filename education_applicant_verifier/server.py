@@ -23,7 +23,7 @@ from .material import from_dict, render
 from .observability import Tracer
 from .profiles import teacher_profile
 from .verifier import FakeCredentialVerifier
-from .worker import FakeWorker, GroqWorker, LLMWorker, StrictFakeWorker
+from .worker import DeepSeekWorker, FakeWorker, GroqWorker, LLMWorker, StrictFakeWorker
 
 app = FastAPI(title="EducationApplicantVerifier")
 
@@ -36,6 +36,8 @@ app.add_middleware(
 )
 
 _DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "applications.json")
+_JOBS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "job_descriptions.json")
+_JOB_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 
 def available_workers() -> dict:
     """Workers offered to the dashboard. Real-model workers appear only when their
@@ -50,6 +52,9 @@ def available_workers() -> dict:
     if os.environ.get("GROQ_API_KEY"):
         model = os.environ.get("GROQ_MODEL", "gemma2-9b-it")
         workers[model] = lambda: GroqWorker(model)
+    if os.environ.get("DEEPSEEK_API_KEY"):
+        model = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+        workers[model] = lambda: DeepSeekWorker(model)
     return workers
 
 
@@ -59,6 +64,24 @@ def _samples() -> list[dict]:
             return json.load(f)
     except Exception:
         return []
+
+
+def _job_descriptions() -> list[dict]:
+    try:
+        with open(_JOBS) as f:
+            index = json.load(f)
+    except Exception:
+        return []
+
+    jobs = []
+    for item in index:
+        path = os.path.join(_JOB_DIR, item["file"])
+        try:
+            with open(path) as f:
+                jobs.append(json.load(f))
+        except Exception:
+            jobs.append(item)
+    return jobs
 
 
 class ReviewRequest(BaseModel):
@@ -73,7 +96,13 @@ def health():
 
 @app.get("/api/samples")
 def samples():
-    return {"samples": _samples(), "workers": list(available_workers())}
+    return {"samples": _samples(), "workers": list(available_workers()),
+            "job_descriptions": _job_descriptions()}
+
+
+@app.get("/api/job-descriptions")
+def job_descriptions():
+    return {"job_descriptions": _job_descriptions()}
 
 
 @app.post("/api/review")
@@ -152,11 +181,13 @@ HTML = """<!doctype html><html lang=en><head><meta charset=utf-8>
 
 <div class=card>
   <div class=row>
+    <div><label>Job description</label><select id=job></select></div>
     <div><label>Sample applicant</label><select id=sample></select></div>
     <div style="flex:0"><label>Worker (swappable)</label><select id=worker></select></div>
     <div style="flex:0"><button id=run>Review applicant</button></div>
   </div>
   <div style="margin-top:10px"><label>Applicant JSON (editable)</label><textarea id=json></textarea></div>
+  <div style="margin-top:10px"><label>Selected job JSON</label><textarea id=jobjson readonly></textarea></div>
 </div>
 
 <div class=card>
@@ -174,17 +205,20 @@ HTML = """<!doctype html><html lang=en><head><meta charset=utf-8>
 <script>
 const STAGES=["material","worker","guardrails","checkpoint","decision"];
 const $=s=>document.querySelector(s);
-let SAMPLES=[];
+let SAMPLES=[];let JOBS=[];
 function drawPipe(){$("#pipe").innerHTML=STAGES.map(s=>`<div class=stage id=st-${s}><b>${s}</b><span>idle</span></div>`).join("")}
 function setStage(id,cls,txt){const el=$("#st-"+id);if(!el)return;el.className="stage "+cls;if(txt)el.querySelector("span").textContent=txt}
 function logln(t){const d=document.createElement("div");d.textContent=t;$("#log").appendChild(d);$("#log").scrollTop=1e9}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 async function load(){
-  const r=await fetch("/api/samples");const j=await r.json();SAMPLES=j.samples;
+  const r=await fetch("/api/samples");const j=await r.json();SAMPLES=j.samples;JOBS=j.job_descriptions||[];
+  $("#job").innerHTML=JOBS.map((x,i)=>`<option value=${i}>${x.employer} — ${x.title}</option>`).join("");
+  $("#job").onchange=()=>{$("#jobjson").value=JSON.stringify(JOBS[$("#job").value],null,2)};
   $("#sample").innerHTML=SAMPLES.map((s,i)=>`<option value=${i}>${s.name} — ${s.role}</option>`).join("");
   $("#worker").innerHTML=j.workers.map(w=>`<option value="${w}">${w}</option>`).join("");
   $("#sample").onchange=()=>{$("#json").value=JSON.stringify(SAMPLES[$("#sample").value],null,2)};
+  $("#job").onchange();
   $("#sample").onchange();
 }
 load();drawPipe();

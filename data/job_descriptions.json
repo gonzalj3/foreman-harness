@@ -1,0 +1,26 @@
+[
+  {
+    "id": "idea-austin-6-8-science-teacher-26-27",
+    "file": "job_descriptions/idea_austin_6_8_science_teacher_26_27.json",
+    "title": "6th-8th Science Teacher Applicant Pool",
+    "employer": "IDEA Public Schools",
+    "location": "Austin Region, TX",
+    "school_year": "2026-2027"
+  },
+  {
+    "id": "harmony-austin-middle-school-science-teacher-26-27",
+    "file": "job_descriptions/harmony_austin_middle_school_science_teacher_26_27.json",
+    "title": "Teacher Science Middle School",
+    "employer": "Harmony Public Schools",
+    "location": "Austin, TX",
+    "school_year": "2026-2027"
+  },
+  {
+    "id": "tsd-elc-elementary-teacher",
+    "file": "job_descriptions/texas_school_for_the_deaf_elc_elementary_teacher.json",
+    "title": "ELC & Elementary Teacher",
+    "employer": "Texas School for the Deaf",
+    "location": "Austin, TX",
+    "school_year": null
+  }
+]
