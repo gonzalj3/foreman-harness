@@ -8,6 +8,7 @@ service deploys fastest.)
 """
 from __future__ import annotations
 
+import glob
 import json
 import os
 from dataclasses import asdict
@@ -22,7 +23,7 @@ from .harness import Harness
 from .material import from_dict, render
 from .observability import Tracer
 from .profiles import teacher_profile
-from .verifier import FakeCredentialVerifier
+from .verifier import FakeCredentialVerifier, TEACredentialVerifier
 from .worker import DeepSeekWorker, FakeWorker, GroqWorker, LLMWorker, StrictFakeWorker
 
 app = FastAPI(title="EducationApplicantVerifier")
@@ -66,6 +67,17 @@ def _samples() -> list[dict]:
         return []
 
 
+def _fill_by(job: dict) -> str:
+    """Human 'needs to be filled by' string for the job card."""
+    deadline = job.get("unposting_date")
+    if deadline:
+        return str(deadline).split("T")[0]  # YYYY-MM-DD
+    year = job.get("school_year")
+    if year:
+        return f"Start of {year} school year"
+    return "Start of 2026-2027 school year"
+
+
 def _job_descriptions() -> list[dict]:
     try:
         with open(_JOBS) as f:
@@ -78,15 +90,34 @@ def _job_descriptions() -> list[dict]:
         path = os.path.join(_JOB_DIR, item["file"])
         try:
             with open(path) as f:
-                jobs.append(json.load(f))
+                job = json.load(f)
         except Exception:
-            jobs.append(item)
+            job = dict(item)
+        job.setdefault("employer", "Austin Independent School District")  # make one up if missing
+        job["fill_by"] = _fill_by(job)
+        jobs.append(job)
     return jobs
+
+
+_APPLICANT_DIR = os.path.join(_JOB_DIR, "applicants")
+
+
+def _candidates() -> list[dict]:
+    out = []
+    for path in sorted(glob.glob(os.path.join(_APPLICANT_DIR, "*.json"))):
+        try:
+            with open(path) as f:
+                out.append(json.load(f))
+        except Exception:
+            pass
+    return out
 
 
 class ReviewRequest(BaseModel):
     applicant: dict
     worker: str = "fake-worker-v1"
+    job: dict | None = None          # selected job description (scored against)
+    verifier: str = "fake"           # "tea" for real TEA lookup, "fake" otherwise
 
 
 @app.get("/health")
@@ -105,6 +136,16 @@ def job_descriptions():
     return {"job_descriptions": _job_descriptions()}
 
 
+@app.get("/api/jobs")
+def jobs():
+    return {"jobs": _job_descriptions()}
+
+
+@app.get("/api/candidates")
+def candidates():
+    return {"candidates": _candidates()}
+
+
 @app.post("/api/review")
 def review(req: ReviewRequest):
     bus = EventBus()
@@ -114,9 +155,12 @@ def review(req: ReviewRequest):
     tracer = Tracer(bus)
     workers = available_workers()
     worker_factory = workers.get(req.worker) or FakeWorker
-    harness = Harness(teacher_profile(FakeCredentialVerifier()), worker_factory(), tracer=tracer)
+    verifier = TEACredentialVerifier(mode="live") if req.verifier == "tea" else FakeCredentialVerifier()
+    harness = Harness(teacher_profile(verifier), worker_factory(), tracer=tracer)
 
     app_obj = from_dict(req.applicant)
+    if req.job:
+        app_obj.metadata = {**(app_obj.metadata or {}), "job": req.job}
     result = harness.run([app_obj])
     rendered = render(result)
 

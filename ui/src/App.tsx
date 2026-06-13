@@ -9,17 +9,19 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const initStages = (): Record<StageKey, StageState> =>
   Object.fromEntries(STAGES.map((s) => [s, { cls: "", txt: "idle" }])) as Record<StageKey, StageState>;
 
-type LoopEvent = { kind: string; applicant_id?: string; attempt?: number; data: any };
+type Job = any;
+type Candidate = any;
+type LoopEvent = { kind: string; attempt?: number; data: any };
 type Outcome = { decision: string; record: any };
 
 export default function App() {
-  const [samples, setSamples] = useState<any[]>([]);
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [workers, setWorkers] = useState<string[]>([]);
-  const [idx, setIdx] = useState(0);
-  const [jobIdx, setJobIdx] = useState(0);
   const [worker, setWorker] = useState("fake-worker-v1");
-  const [jsonText, setJsonText] = useState("");
+
+  const [job, setJob] = useState<Job | null>(null);
+  const [cand, setCand] = useState<Candidate | null>(null);
   const [running, setRunning] = useState(false);
   const [stages, setStages] = useState<Record<StageKey, StageState>>(initStages());
   const [log, setLog] = useState<string[]>([]);
@@ -30,17 +32,18 @@ export default function App() {
     fetch(`${API}/api/samples`)
       .then((r) => r.json())
       .then((j) => {
-        setSamples(j.samples || []);
         setJobs(j.job_descriptions || []);
-        setWorkers(j.workers || []);
-        if (j.samples?.length) setJsonText(JSON.stringify(j.samples[0], null, 2));
+        const ws: string[] = j.workers || [];
+        setWorkers(ws);
+        const real = ws.find((w) => !w.startsWith("fake") && !w.startsWith("strict"));
+        setWorker(real || ws[0] || "fake-worker-v1");
       })
-      .catch(() => addLog("Could not reach backend at " + API));
+      .catch(() => {});
+    fetch(`${API}/api/candidates`)
+      .then((r) => r.json())
+      .then((j) => setCandidates(j.candidates || []))
+      .catch(() => {});
   }, []);
-
-  useEffect(() => {
-    if (samples[idx]) setJsonText(JSON.stringify(samples[idx], null, 2));
-  }, [idx]);
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = 1e9;
@@ -50,25 +53,35 @@ export default function App() {
   const setStage = (k: StageKey, cls: string, txt: string) =>
     setStages((s) => ({ ...s, [k]: { cls, txt } }));
 
-  async function run() {
-    let applicant: any;
-    try {
-      applicant = JSON.parse(jsonText);
-    } catch (e) {
-      addLog("Invalid JSON: " + e);
-      return;
-    }
-    setRunning(true);
-    setLog([]);
+  function openJob(j: Job) {
+    setJob(j);
+    setCand(null);
     setOutcome(null);
+    setLog([]);
     setStages(initStages());
+  }
+  function backToJobs() {
+    setJob(null);
+    setCand(null);
+    setOutcome(null);
+    setLog([]);
+    setStages(initStages());
+  }
+
+  async function review(candidate: Candidate) {
+    setCand(candidate);
+    setOutcome(null);
+    setLog([]);
+    setStages(initStages());
+    setRunning(true);
+    setStage("material", "on", "received");
 
     let data: { events: LoopEvent[]; outcome: Outcome };
     try {
       const res = await fetch(`${API}/api/review`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ applicant, worker }),
+        body: JSON.stringify({ applicant: candidate, job, worker, verifier: "tea" }),
       });
       data = await res.json();
     } catch (e) {
@@ -77,19 +90,20 @@ export default function App() {
       return;
     }
 
-    setStage("material", "on", "received");
     for (const ev of data.events) {
-      await sleep(280);
+      await sleep(320);
       if (ev.kind === "credential") {
         setStage("material", "ok", "schema ok");
         setStage("worker", "on", "verify cert: " + ev.data.status);
-        addLog("credential → " + ev.data.status);
+        addLog("credential → " + ev.data.status + (ev.data.holder ? ` (${ev.data.holder})` : ""));
       } else if (ev.kind === "attempt_started") {
         setStage("worker", "on", "attempt " + ev.attempt);
         addLog("— attempt " + ev.attempt);
       } else if (ev.kind === "worker_proposed") {
         setStage("worker", "ok", "proposed " + ev.data.overall);
         addLog(`worker proposed score ${ev.data.overall} (${ev.data.recommendation})`);
+      } else if (ev.kind === "worker_error") {
+        addLog("⚠ worker error: " + ev.data.error);
       } else if (ev.kind === "guardrail") {
         const ok = ev.data.passed;
         setStage("guardrails", ok ? "ok" : "bad", ok ? "passed" : ev.data.failures.join(","));
@@ -117,134 +131,178 @@ export default function App() {
     setRunning(false);
   }
 
-  const rec = outcome?.record || {};
-  return (
-    <div className="wrap">
-      <h1>
-        Education<span>Applicant</span>Verifier
-      </h1>
-      <div className="sub">
-        Drop in an applicant, watch the harness move through the loop, and see why it decided.
-      </div>
-
-      <div className="card">
-        <div className="row">
-          <div>
-            <label>Job description</label>
-            <select value={jobIdx} onChange={(e) => setJobIdx(+e.target.value)}>
-              {jobs.map((j, i) => (
-                <option key={j.id || i} value={i}>
-                  {j.employer} — {j.title}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label>Sample applicant</label>
-            <select value={idx} onChange={(e) => setIdx(+e.target.value)}>
-              {samples.map((s, i) => (
-                <option key={i} value={i}>
-                  {s.name} — {s.role}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div style={{ flex: 0 }}>
-            <label>Worker (swappable)</label>
-            <select value={worker} onChange={(e) => setWorker(e.target.value)}>
-              {workers.map((w) => (
-                <option key={w} value={w}>
-                  {w}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div style={{ flex: 0 }}>
-            <button disabled={running} onClick={run}>
-              {running ? "Reviewing…" : "Review applicant"}
+  // ---------- Jobs view ----------
+  if (!job) {
+    return (
+      <div className="wrap">
+        <h1>
+          Education<span>Applicant</span>Verifier
+        </h1>
+        <div className="sub">
+          You're a school administrator hiring for these roles. Pick a job to review candidates.
+        </div>
+        <div className="jobs-grid">
+          {jobs.map((j) => (
+            <button className="job-card" key={j.id} onClick={() => openJob(j)}>
+              <div className="job-title">{j.title}</div>
+              <div className="job-school">{j.employer}</div>
+              <div className="job-meta">{j.location}</div>
+              <div className="job-fill">
+                Fill by: <b>{j.fill_by}</b>
+              </div>
             </button>
-          </div>
+          ))}
         </div>
-        <div style={{ marginTop: 10 }}>
-          <label>Applicant JSON (editable)</label>
-          <textarea value={jsonText} onChange={(e) => setJsonText(e.target.value)} />
-        </div>
-        {jobs[jobIdx] && (
-          <div style={{ marginTop: 10 }}>
-            <label>Selected job JSON</label>
-            <textarea readOnly value={JSON.stringify(jobs[jobIdx], null, 2)} />
-          </div>
-        )}
       </div>
+    );
+  }
 
-      <div className="card">
-        <label>Loop</label>
-        <div className="pipe">
-          {STAGES.map((s) => (
-            <div key={s} className={"stage " + stages[s].cls}>
-              <b>{s}</b>
-              <span>{stages[s].txt}</span>
+  // ---------- Job detail view ----------
+  const rec = outcome?.record || {};
+  const loopVisible = running || !!outcome || log.length > 0;
+  return (
+    <div className="detail">
+      <header className="detailbar">
+        <button className="back" onClick={backToJobs}>
+          ← Jobs
+        </button>
+        <div className="dtitle">
+          {job.title} <span className="dschool">· {job.employer}</span>
+        </div>
+        <div className="wsel">
+          <label>Worker</label>
+          <select value={worker} onChange={(e) => setWorker(e.target.value)}>
+            {workers.map((w) => (
+              <option key={w} value={w}>
+                {w}
+              </option>
+            ))}
+          </select>
+        </div>
+      </header>
+
+      <div className={"split" + (loopVisible ? " with-loop" : "")}>
+        {/* Left: job description */}
+        <section className="pane jd">
+          <h2>Job Description</h2>
+          <div className="jd-head">
+            <div className="jd-name">{job.title}</div>
+            <div className="muted">
+              {job.employer} — {job.location} · Fill by {job.fill_by}
             </div>
-          ))}
-        </div>
-        <div className="log" ref={logRef}>
-          {log.map((l, i) => (
-            <div key={i}>{l}</div>
-          ))}
-        </div>
+          </div>
+          {job.summary && <p className="jd-summary">{job.summary}</p>}
+          <JdList title="Required education" items={job.required_education} />
+          <JdList title="Required credentials" items={job.required_credentials} />
+          <JdList title="Preferred experience" items={job.preferred_experience} />
+          <JdList title="Responsibilities" items={job.responsibilities} />
+          <JdList title="Skills" items={job.skills} />
+        </section>
+
+        {/* Right: candidate list -> candidate detail + decision */}
+        <section className="pane right">
+          {!cand ? (
+            <>
+              <h2>Candidates</h2>
+              {candidates.map((c) => (
+                <button className="cand" key={c.id} onClick={() => review(c)}>
+                  <div className="cand-name">{c.name}</div>
+                  <div className="muted">{c.role}</div>
+                  <div className="cand-go">Review →</div>
+                </button>
+              ))}
+              {candidates.length === 0 && <div className="muted">No candidates yet.</div>}
+            </>
+          ) : (
+            <>
+              <button className="link" onClick={() => { setCand(null); setOutcome(null); }}>
+                ← candidates
+              </button>
+              <h2>{cand.name}</h2>
+              <div className="muted">{cand.role}</div>
+              {cand.narrative && <p className="cand-narr">{cand.narrative}</p>}
+
+              {outcome ? (
+                <div className="verdict-card">
+                  <div className="verdict">
+                    <span className={"tag pill-" + outcome.decision}>{outcome.decision.toUpperCase()}</span>
+                  </div>
+                  {rec.credential && (
+                    <div className="muted">
+                      Credential {rec.credential.cert_id || ""}: <b>{rec.credential.status}</b>
+                      {rec.credential.holder_name ? ` — ${rec.credential.holder_name}` : ""}
+                      {rec.credential.expires ? `, exp ${rec.credential.expires}` : ""}
+                    </div>
+                  )}
+                  {rec.proposal && (
+                    <>
+                      <div style={{ marginTop: 6 }}>
+                        Score <b>{rec.proposal.overall_score}</b> ({rec.attempts} attempt
+                        {rec.attempts > 1 ? "s" : ""}) — {rec.proposal.recommendation}
+                      </div>
+                      <ul>
+                        {rec.proposal.criteria.map((c: any, i: number) => (
+                          <li key={i}>
+                            <b>{c.name}</b>: {c.score}/10 — <span className="muted">{c.evidence}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      {rec.proposal.rationale && <p className="muted">{rec.proposal.rationale}</p>}
+                    </>
+                  )}
+                  {rec.reason && (
+                    <div style={{ marginTop: 6 }}>
+                      <b>Reason:</b> {rec.reason}
+                    </div>
+                  )}
+                  {rec.alarms?.length > 0 &&
+                    rec.alarms.map((a: any, i: number) => (
+                      <div key={i} className={"alarm " + a.severity}>
+                        <b>{a.type}</b> [{a.severity}] — {a.recommended_action}
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="muted">{running ? "Running the harness…" : ""}</div>
+              )}
+            </>
+          )}
+        </section>
       </div>
 
-      {outcome && (
-        <div className="card">
-          <label>Decision</label>
-          <div className="verdict">
-            <span className={"tag pill-" + outcome.decision}>{outcome.decision.toUpperCase()}</span>{" "}
-            &nbsp; {rec.name}
+      {/* Bottom: full-width agent loop */}
+      {loopVisible && (
+        <div className="loopbar">
+          <div className="loopbar-label">Harness loop {running ? "· running" : ""}</div>
+          <div className="pipe">
+            {STAGES.map((s) => (
+              <div key={s} className={"stage " + stages[s].cls}>
+                <b>{s}</b>
+                <span>{stages[s].txt}</span>
+              </div>
+            ))}
           </div>
-          <div className="why" style={{ marginTop: 8 }}>
-            {rec.credential && (
-              <div className="muted">
-                Credential {rec.credential.cert_id || ""}: <b>{rec.credential.status}</b>
-                {rec.credential.holder_name ? ` — holder ${rec.credential.holder_name}` : ""}
-              </div>
-            )}
-            {rec.proposal && (
-              <>
-                <div style={{ marginTop: 6 }}>
-                  Score <b>{rec.proposal.overall_score}</b> ({rec.attempts} attempt
-                  {rec.attempts > 1 ? "s" : ""}) — {rec.proposal.recommendation}
-                </div>
-                <ul>
-                  {rec.proposal.criteria.map((c: any, i: number) => (
-                    <li key={i}>
-                      <b>{c.name}</b>: {c.score}/10 — <span className="muted">{c.evidence}</span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-            {rec.reason && (
-              <div style={{ marginTop: 6 }}>
-                <b>Reason:</b> {rec.reason}
-              </div>
-            )}
-            {rec.alarms?.length > 0 && (
-              <>
-                <div style={{ marginTop: 8 }}>Alarms:</div>
-                {rec.alarms.map((a: any, i: number) => (
-                  <div key={i} className={"alarm " + a.severity}>
-                    <b>{a.type}</b> [{a.severity}] — {a.recommended_action}
-                  </div>
-                ))}
-              </>
-            )}
+          <div className="log" ref={logRef}>
+            {log.map((l, i) => (
+              <div key={i}>{l}</div>
+            ))}
           </div>
         </div>
       )}
+    </div>
+  );
+}
 
-      <div className="foot">
-        backend: <code>{API}</code>
-      </div>
+function JdList({ title, items }: { title: string; items?: string[] }) {
+  if (!items || items.length === 0) return null;
+  return (
+    <div className="jd-sec">
+      <div className="jd-sec-title">{title}</div>
+      <ul>
+        {items.map((it, i) => (
+          <li key={i}>{it}</li>
+        ))}
+      </ul>
     </div>
   );
 }

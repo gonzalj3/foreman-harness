@@ -22,5 +22,13 @@
     "employer": "Texas School for the Deaf",
     "location": "Austin, TX",
     "school_year": null
+  },
+  {
+    "id": "fort-bend-ecse-teacher-26-27",
+    "file": "job_descriptions/fort_bend_ecse_teacher_26_27.json",
+    "title": "Elementary School: Teacher Early Childhood Special Education",
+    "employer": "Fort Bend Independent School District",
+    "location": "Sugar Land, TX",
+    "school_year": "2026-2027"
   }
 ]

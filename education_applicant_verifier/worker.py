@@ -102,11 +102,30 @@ def _build_user_prompt(application: Application, rubric: list[str], prior_failur
         "narrative": application.narrative,
         "supported_experience_years": application.document_experience_years,
     }
-    parts = [
+    parts: list[str] = []
+
+    job = (getattr(application, "metadata", None) or {}).get("job")
+    if job:
+        jd = {
+            k: job[k]
+            for k in ("title", "employer", "summary", "required_education",
+                      "required_credentials", "preferred_experience", "skills", "rubric_hints")
+            if job.get(k)
+        }
+        parts += [
+            "Job description — judge the applicant's FIT against THIS specific role:",
+            json.dumps(jd, indent=2),
+            "",
+        ]
+
+    parts += [
         "Application:",
         json.dumps(app, indent=2),
         "",
         f"Score exactly these rubric criteria, using these names: {rubric}.",
+        "Score 'fit' specifically by how well the applicant matches the job's "
+        "requirements and responsibilities above." if job else
+        "Score 'fit' by how well the applicant suits an education-sector role.",
         "Return a JSON object with keys: overall_score (int 0-10), "
         "recommendation ('advance' or 'reject'), rationale (string), "
         "experience_years (int), and criteria (array of {name, score 0-10, evidence}).",
