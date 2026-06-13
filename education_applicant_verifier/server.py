@@ -47,15 +47,17 @@ def available_workers() -> dict:
         "fake-worker-v1": FakeWorker,
         "strict-fake-worker-v1": StrictFakeWorker,
     }
+    # bind `m` per-lambda (default arg) — a bare closure would late-bind and make
+    # every factory use the last model assigned.
     if os.environ.get("ANTHROPIC_API_KEY"):
-        model = os.environ.get("CLAUDE_MODEL", "claude-haiku-4-5")
-        workers[model] = lambda: LLMWorker(model)
+        m = os.environ.get("CLAUDE_MODEL", "claude-haiku-4-5")
+        workers[m] = lambda m=m: LLMWorker(m)
     if os.environ.get("GROQ_API_KEY"):
-        model = os.environ.get("GROQ_MODEL", "gemma2-9b-it")
-        workers[model] = lambda: GroqWorker(model)
+        m = os.environ.get("GROQ_MODEL", "gemma2-9b-it")
+        workers[m] = lambda m=m: GroqWorker(m)
     if os.environ.get("DEEPSEEK_API_KEY"):
-        model = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-flash")
-        workers[model] = lambda: DeepSeekWorker(model)
+        m = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-flash")
+        workers[m] = lambda m=m: DeepSeekWorker(m)
     return workers
 
 
