@@ -13,6 +13,7 @@ import os
 from dataclasses import asdict
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
@@ -25,6 +26,14 @@ from .verifier import FakeCredentialVerifier
 from .worker import FakeWorker, StrictFakeWorker
 
 app = FastAPI(title="EducationApplicantVerifier")
+
+# Allow the Vercel-hosted frontend (different origin) to call this API.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 _DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "applications.json")
 
