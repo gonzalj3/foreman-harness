@@ -1,0 +1,56 @@
+[
+  {
+    "id": "maria",
+    "name": "Maria Alvarez",
+    "role": "teacher",
+    "cert_id": "TX-100",
+    "claimed_experience_years": 4,
+    "document_experience_years": 4,
+    "narrative": "4 years teaching 3rd grade; led a literacy initiative that raised reading scores."
+  },
+  {
+    "id": "james",
+    "name": "James Chen",
+    "role": "teacher",
+    "cert_id": "TX-200",
+    "claimed_experience_years": 8,
+    "document_experience_years": 3,
+    "narrative": "Middle-school math; resume narrative claims more years than the record supports."
+  },
+  {
+    "id": "robert",
+    "name": "Robert Diaz",
+    "role": "paraprofessional",
+    "cert_id": "TX-300",
+    "claimed_experience_years": 5,
+    "document_experience_years": 5,
+    "narrative": "Special-education paraprofessional; certificate on record has lapsed."
+  },
+  {
+    "id": "sarah",
+    "name": "Sarah Kim",
+    "role": "teacher",
+    "cert_id": "TX-777",
+    "claimed_experience_years": 6,
+    "document_experience_years": 6,
+    "narrative": "Strong applicant, but the cited certificate number is not in the registry."
+  },
+  {
+    "id": "evan",
+    "name": "Evan Fraud",
+    "role": "substitute",
+    "cert_id": "TX-100",
+    "claimed_experience_years": 2,
+    "document_experience_years": 2,
+    "narrative": "Lists a certificate number that actually belongs to someone else."
+  },
+  {
+    "id": "nina",
+    "name": "Nina Patel",
+    "role": "teacher",
+    "cert_id": "TX-500",
+    "claimed_experience_years": 7,
+    "document_experience_years": 7,
+    "narrative": "Verification service is temporarily unavailable for this certificate."
+  }
+]
