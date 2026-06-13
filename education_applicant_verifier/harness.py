@@ -18,7 +18,7 @@ from .alarms import AlarmType, raise_alarm
 from .events import LoopEvent
 from .observability import Tracer
 from .profiles import RoleProfile
-from .types import Application, Escalation, Evaluation, RunResult, Worker
+from .types import Application, Escalation, Evaluation, Failure, RunResult, Worker
 
 
 class Harness:
@@ -108,7 +108,13 @@ class Harness:
                 attempt += 1
                 t.event(LoopEvent("attempt_started", app.id, attempt=attempt))
                 with t.span("worker.propose", applicant_id=app.id, attempt=attempt):
-                    proposal = self.worker.propose(app, self.profile.rubric, failures)
+                    try:
+                        proposal = self.worker.propose(app, self.profile.rubric, failures)
+                    except Exception as e:  # a model can error or return unparseable output
+                        failures = [Failure("WORKER_ERROR", f"{type(e).__name__}: {e}"[:200])]
+                        t.event(LoopEvent("worker_error", app.id, attempt=attempt,
+                                          data={"error": str(e)[:200]}))
+                        continue
                 t.event(LoopEvent("worker_proposed", app.id, attempt=attempt, data={
                     "overall": proposal.overall_score, "recommendation": proposal.recommendation}))
 

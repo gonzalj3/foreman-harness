@@ -23,7 +23,7 @@ from .material import from_dict, render
 from .observability import Tracer
 from .profiles import teacher_profile
 from .verifier import FakeCredentialVerifier
-from .worker import FakeWorker, StrictFakeWorker
+from .worker import FakeWorker, GroqWorker, LLMWorker, StrictFakeWorker
 
 app = FastAPI(title="EducationApplicantVerifier")
 
@@ -37,7 +37,20 @@ app.add_middleware(
 
 _DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "applications.json")
 
-WORKERS = {"fake-worker-v1": FakeWorker, "strict-fake-worker-v1": StrictFakeWorker}
+def available_workers() -> dict:
+    """Workers offered to the dashboard. Real-model workers appear only when their
+    API key is configured, so the UI never offers a worker that can't run."""
+    workers: dict = {
+        "fake-worker-v1": FakeWorker,
+        "strict-fake-worker-v1": StrictFakeWorker,
+    }
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        model = os.environ.get("CLAUDE_MODEL", "claude-opus-4-8")
+        workers[model] = lambda: LLMWorker(model)
+    if os.environ.get("GROQ_API_KEY"):
+        model = os.environ.get("GROQ_MODEL", "gemma2-9b-it")
+        workers[model] = lambda: GroqWorker(model)
+    return workers
 
 
 def _samples() -> list[dict]:
@@ -60,7 +73,7 @@ def health():
 
 @app.get("/api/samples")
 def samples():
-    return {"samples": _samples(), "workers": list(WORKERS)}
+    return {"samples": _samples(), "workers": list(available_workers())}
 
 
 @app.post("/api/review")
@@ -70,8 +83,9 @@ def review(req: ReviewRequest):
     bus.subscribe(lambda e: events.append({"kind": e.kind, "applicant_id": e.applicant_id,
                                            "attempt": e.attempt, "data": e.data}))
     tracer = Tracer(bus)
-    worker_cls = WORKERS.get(req.worker, FakeWorker)
-    harness = Harness(teacher_profile(FakeCredentialVerifier()), worker_cls(), tracer=tracer)
+    workers = available_workers()
+    worker_factory = workers.get(req.worker) or FakeWorker
+    harness = Harness(teacher_profile(FakeCredentialVerifier()), worker_factory(), tracer=tracer)
 
     app_obj = from_dict(req.applicant)
     result = harness.run([app_obj])
