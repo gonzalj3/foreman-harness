@@ -128,7 +128,11 @@ class Harness:
                                           data={"error": str(e)[:200]}))
                         continue
                 t.event(LoopEvent("worker_proposed", app.id, attempt=attempt, data={
-                    "overall": proposal.overall_score, "recommendation": proposal.recommendation}))
+                    "overall": proposal.overall_score,
+                    "recommendation": proposal.recommendation,
+                    "rationale": proposal.rationale,
+                    "criteria": [{"name": cr.name, "score": cr.score, "evidence": cr.evidence}
+                                 for cr in proposal.criteria]}))
 
                 g = guardrails.check(proposal, app, self.profile.guardrail_config)
                 c = checkpoints.check_evaluation(proposal, app)
@@ -137,9 +141,9 @@ class Harness:
                 loop_alarms.extend(g.alarms + c.alarms)
 
                 t.event(LoopEvent("guardrail", app.id, attempt=attempt, data={
-                    "passed": g.passed, "failures": [f.code for f in g.failures]}))
+                    "passed": g.passed, "failures": [f.code for f in g.failures], "checks": g.checks}))
                 t.event(LoopEvent("checkpoint", app.id, attempt=attempt, data={
-                    "passed": c.passed, "failures": [f.code for f in c.failures]}))
+                    "passed": c.passed, "failures": [f.code for f in c.failures], "checks": c.checks}))
 
                 if g.passed and c.passed:
                     passed = True

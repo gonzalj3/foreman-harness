@@ -24,34 +24,53 @@ BANNED_TERMS = [
 def check(proposal: Proposal, application: Application, config: dict | None = None) -> CheckResult:
     failures: list[Failure] = []
     raised: list = []
+    checks: list[dict] = []
 
     # 1. Grounding: a claimed qualification may not exceed what the document supports.
     claimed_years = proposal.claims.get("experience_years")
-    if claimed_years is not None and claimed_years > application.document_experience_years:
+    supported = application.document_experience_years
+    grounded = claimed_years is None or claimed_years <= supported
+    checks.append({
+        "name": "experience claim grounded in the document",
+        "passed": grounded,
+        "detail": (f"claimed {claimed_years}y vs {supported}y supported"
+                   if claimed_years is not None else "no experience claimed"),
+    })
+    if not grounded:
         failures.append(Failure(
             "UNGROUNDED_CLAIM",
-            f"Claimed {claimed_years} years of experience but the application supports "
-            f"{application.document_experience_years}",
+            f"Claimed {claimed_years} years of experience but the application supports {supported}",
             field="experience_years",
         ))
         raised.append(alarms.raise_alarm(
             AlarmType.HALLUCINATED_QUALIFICATION, application.id,
-            {"claimed": claimed_years, "supported": application.document_experience_years},
+            {"claimed": claimed_years, "supported": supported},
         ))
 
     # 2. No protected-class / biased language anywhere in the evaluation.
     text = " ".join([proposal.rationale] + [c.evidence for c in proposal.criteria]).lower()
     # whole-word / whole-phrase match so "old" doesn't fire inside "household"
     hits = [t for t in BANNED_TERMS if re.search(r"\b" + re.escape(t) + r"\b", text)]
+    checks.append({
+        "name": "no protected-class / biased language",
+        "passed": not hits,
+        "detail": ("found: " + ", ".join(hits)) if hits else "none of the banned terms present",
+    })
     if hits:
         failures.append(Failure("BIASED_LANGUAGE", f"Protected-class / biased language: {hits}"))
         raised.append(alarms.raise_alarm(AlarmType.BIAS_DETECTED, application.id, {"terms": hits}))
 
     # 3. Score must be in range.
-    if not (0 <= proposal.overall_score <= 10):
+    in_range = 0 <= proposal.overall_score <= 10
+    checks.append({
+        "name": "overall score within 0-10",
+        "passed": in_range,
+        "detail": f"overall score = {proposal.overall_score}",
+    })
+    if not in_range:
         failures.append(Failure(
             "SCORE_OUT_OF_RANGE", f"Overall score {proposal.overall_score} is outside 0-10"))
         raised.append(alarms.raise_alarm(
             AlarmType.SCORE_OUT_OF_RANGE, application.id, {"score": proposal.overall_score}))
 
-    return CheckResult(passed=not failures, failures=failures, alarms=raised)
+    return CheckResult(passed=not failures, failures=failures, alarms=raised, checks=checks)

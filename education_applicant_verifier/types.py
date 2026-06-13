@@ -92,6 +92,7 @@ class CheckResult:
     passed: bool
     failures: list[Failure] = field(default_factory=list)
     alarms: list[Alarm] = field(default_factory=list)
+    checks: list[dict] = field(default_factory=list)  # every check run: {name, passed, detail}
 
 
 # ---- Per-applicant results ----

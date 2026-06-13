@@ -94,35 +94,48 @@ export default function App() {
     }
 
     for (const ev of data.events) {
-      await sleep(320);
+      await sleep(300);
       if (ev.kind === "credential") {
         setStage("material", "ok", "schema ok");
         const ok = ev.data.status === "valid";
         setStage("credential", ok ? "ok" : "bad", ev.data.status);
         setCredEvent(ev.data);
-        addLog("TEA credential check → " + ev.data.status + (ev.data.holder ? ` (${ev.data.holder})` : ""));
+        addLog(`TEA credential check → ${ev.data.status}${ev.data.holder ? ` (${ev.data.holder})` : ""}`);
+        if (ev.data.certifications?.length)
+          addLog(
+            `   certified subjects: ${ev.data.certifications.join(", ")}` +
+              (ev.data.grade_bands?.length ? ` · grades ${ev.data.grade_bands.join(", ")}` : "") +
+              (ev.data.expires ? ` · expires ${ev.data.expires}` : "")
+          );
       } else if (ev.kind === "attempt_started") {
         setStage("worker", "on", "attempt " + ev.attempt);
-        addLog("— attempt " + ev.attempt);
+        addLog(`— attempt ${ev.attempt}: asking the model to score the candidate against the job`);
       } else if (ev.kind === "worker_proposed") {
-        setStage("worker", "ok", "proposed " + ev.data.overall);
-        addLog(`worker proposed score ${ev.data.overall} (${ev.data.recommendation})`);
+        setStage("worker", "ok", "scored " + ev.data.overall);
+        addLog(`🤖 model scored ${ev.data.overall}/10 → ${ev.data.recommendation}`);
+        for (const c of ev.data.criteria || [])
+          addLog(`   • ${c.name}: ${c.score}/10 — ${String(c.evidence).slice(0, 100)}`);
+        if (ev.data.rationale) addLog(`   rationale: ${String(ev.data.rationale).slice(0, 140)}`);
       } else if (ev.kind === "worker_error") {
         addLog("⚠ worker error: " + ev.data.error);
       } else if (ev.kind === "guardrail") {
         const ok = ev.data.passed;
-        setStage("guardrails", ok ? "ok" : "bad", ok ? "passed" : ev.data.failures.join(","));
-        addLog("guardrails " + (ok ? "PASS" : "FAIL " + ev.data.failures.join(",")));
+        setStage("guardrails", ok ? "ok" : "bad", ok ? "passed" : (ev.data.failures || []).join(","));
+        addLog(`guardrails ${ok ? "PASS" : "FAIL"} — ${(ev.data.checks || []).length} checks:`);
+        for (const ch of ev.data.checks || [])
+          addLog(`   ${ch.passed ? "✓" : "✕"} ${ch.name} — ${ch.detail}`);
       } else if (ev.kind === "checkpoint") {
         const ok = ev.data.passed;
-        setStage("checkpoint", ok ? "ok" : "bad", ok ? "passed" : ev.data.failures.join(","));
-        addLog("checkpoint " + (ok ? "PASS" : "FAIL " + ev.data.failures.join(",")));
+        setStage("checkpoint", ok ? "ok" : "bad", ok ? "passed" : (ev.data.failures || []).join(","));
+        addLog(`checkpoint ${ok ? "PASS" : "FAIL"} — ${(ev.data.checks || []).length} checks:`);
+        for (const ch of ev.data.checks || [])
+          addLog(`   ${ch.passed ? "✓" : "✕"} ${ch.name} — ${ch.detail}`);
         if (!ok) {
           setStage("worker", "on", "revising…");
-          addLog("↩ returning failure to worker — will revise");
+          addLog("   ↩ returning the failing checks to the model — it will revise");
         }
       } else if (ev.kind === "alarm") {
-        addLog(`🚨 ${ev.data.type} [${ev.data.severity}]`);
+        addLog(`🚨 ${ev.data.type} [${ev.data.severity}] — ${ev.data.recommended_action}`);
       } else if (ev.kind === "escalated") {
         setStage("decision", "bad", "escalated");
         addLog("escalated → " + ev.data.reason);
