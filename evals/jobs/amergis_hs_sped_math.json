@@ -1,0 +1,30 @@
+{
+  "id": "amergis-hs-sped-math",
+  "title": "High School SPED Math Teacher",
+  "employer": "Amergis (district in Taylor, TX)",
+  "location": "Taylor, TX",
+  "school_year": "2026-2027",
+  "employment_type": "Full-time (contract)",
+  "category": "Special Education / Math",
+  "summary": "Provide high school math instruction within a special education resource/inclusion setting. Develop and implement IEPs, support students with academic and behavioral needs, and collaborate with general education staff.",
+  "required_education": ["Bachelor's degree"],
+  "required_credentials": [
+    "Active Texas Special Education (SPED) certification",
+    "Texas Mathematics 8-12 certification"
+  ],
+  "preferred_experience": ["2+ years SPED experience", "1+ year high school math teaching"],
+  "responsibilities": [
+    "Provide instruction in high school math within a special education setting.",
+    "Develop and implement IEPs and instructional plans.",
+    "Support students with academic and behavioral needs.",
+    "Collaborate with general education teachers and staff.",
+    "Monitor student progress and participate in IEP meetings."
+  ],
+  "skills": ["Special education instruction", "IEP development", "High school math content", "Progress monitoring", "Collaboration"],
+  "rubric_hints": [
+    "Texas SPED certification (hard requirement)",
+    "Texas Mathematics 8-12 certification (hard requirement)",
+    "Special education and high school math experience"
+  ],
+  "unposting_date": null
+}

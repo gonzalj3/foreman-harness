@@ -1,5 +1,6 @@
 ui
 tests
+evals
 *.pdf
 *.rtf
 _*.png

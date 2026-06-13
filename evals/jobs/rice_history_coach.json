@@ -1,0 +1,36 @@
+{
+  "id": "rice-isd-history-teacher-coach",
+  "title": "History Teacher / Coach",
+  "employer": "Rice ISD",
+  "location": "Rice, TX",
+  "school_year": "2026-2027",
+  "employment_type": "Full-time",
+  "category": "Social Studies / Athletics",
+  "summary": "Teach high school social studies (World History, U.S. History, Government, Economics) and serve in a coaching role for assigned UIL sport(s). Provide engaging, TEKS-aligned instruction and develop student-athletes through structured practice and positive leadership.",
+  "required_education": ["Bachelor's degree from an accredited university"],
+  "required_credentials": [
+    "Valid Texas teaching certificate in Social Studies 7-12 (or 8-12) for the subject assigned",
+    "Current automated external defibrillator (AED) certificate",
+    "Valid Texas commercial driver's license (CDL) with Passenger (P) and School Bus (S) endorsements for coaching, or willingness to obtain"
+  ],
+  "preferred_experience": [
+    "Coaching experience or participation in the sport assigned",
+    "Classroom social studies teaching experience"
+  ],
+  "responsibilities": [
+    "Plan and deliver TEKS-aligned instruction in high school social studies courses.",
+    "Promote historical thinking, civic responsibility, and real-world connections.",
+    "Use data to guide instruction and provide interventions and enrichment.",
+    "Serve as a coach in one or more UIL sports; run practices and develop athletes.",
+    "Ensure compliance with UIL rules and district policies.",
+    "Drive a school bus to transport athletes to out-of-district competitions.",
+    "Maintain accurate records of student progress, grades, and attendance."
+  ],
+  "skills": ["Social studies content knowledge", "Coaching techniques", "UIL rules", "Classroom management", "Communication"],
+  "rubric_hints": [
+    "Texas Social Studies 7-12 / 8-12 certification fit (hard requirement)",
+    "Coaching readiness: CDL (P/S) and AED certificate",
+    "Subject-area teaching experience"
+  ],
+  "unposting_date": null
+}

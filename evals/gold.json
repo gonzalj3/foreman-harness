@@ -1,0 +1,13 @@
+{
+  "description": "Gold eval set. Each case pairs a real candidate (data/applicants/<candidate>.json) with an eval-only job (evals/jobs/<job>.json). Expected decisions derive from the candidate's live TEA certification (captured offline in evals/fixtures/tea) vs the job's required subject/grade. These jobs are NOT listed on the deployed website (no overlap).",
+  "cases": [
+    {"candidate": "adrian_edmonds",   "job": "rice_history_coach",   "expected": "rejected",   "why": "Generalist / Mathematics / ESL — no Social Studies 7-12 certification for a history/coach role"},
+    {"candidate": "josselyn_brueske", "job": "rice_history_coach",   "expected": "rejected",   "why": "Core Subjects EC-6 — no Social Studies 7-12 certification"},
+    {"candidate": "matthew_balter",   "job": "rice_history_coach",   "expected": "rejected",   "why": "ESL Generalist 4-8 — no Social Studies certification"},
+    {"candidate": "adrian_edmonds",   "job": "amergis_hs_sped_math", "expected": "rejected",   "why": "No SPED certification; Mathematics 4-8 does not cover the required SPED + Math 8-12"},
+    {"candidate": "candice_pilkinton","job": "amergis_hs_sped_math", "expected": "rejected",   "why": "No SPED certification and no secondary math certification"},
+    {"candidate": "candice_pilkinton","job": "prelude_math",         "expected": "accepted",   "why": "Core Subjects EC-6 covers grades 3-6 mathematics"},
+    {"candidate": "josselyn_brueske", "job": "prelude_math",         "expected": "accepted",   "why": "Core Subjects EC-6 covers grades 3-6 mathematics"},
+    {"candidate": "paul_hanna",       "job": "prelude_math",         "expected": "ineligible", "why": "No Texas certificate found in the TEA registry (hard-gate ineligible)"}
+  ]
+}

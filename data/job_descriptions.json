@@ -30,5 +30,37 @@
     "employer": "Fort Bend Independent School District",
     "location": "Sugar Land, TX",
     "school_year": "2026-2027"
+  },
+  {
+    "id": "cedar-hill-hs-english-ii-coach",
+    "file": "job_descriptions/cedar_hill_hs_english_ii_coach.json",
+    "title": "High School English II Teacher / Coach (2026-2027)",
+    "employer": "Texas Leadership Public Schools — Cedar Hill",
+    "location": "Cedar Hill, TX",
+    "school_year": "2026-2027"
+  },
+  {
+    "id": "spring-isd-ms-english",
+    "file": "job_descriptions/spring_isd_ms_english.json",
+    "title": "English Teacher, Middle School (2026-2027)",
+    "employer": "Spring Independent School District",
+    "location": "Houston, TX",
+    "school_year": "2026-2027"
+  },
+  {
+    "id": "judson-math-precalculus",
+    "file": "job_descriptions/judson_math_precalculus.json",
+    "title": "Math / Pre-Calculus Teacher — Early College Academy (2026-2027)",
+    "employer": "Judson Independent School District",
+    "location": "Live Oak, TX",
+    "school_year": "2026-2027"
+  },
+  {
+    "id": "idea-ap-calculus",
+    "file": "job_descriptions/idea_ap_calculus.json",
+    "title": "AP Calculus Teacher — IDEA Weslaco Pike College Prep (2026-2027)",
+    "employer": "IDEA Public Schools",
+    "location": "Weslaco, TX",
+    "school_year": "2026-2027"
   }
 ]

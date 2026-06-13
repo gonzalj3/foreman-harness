@@ -1,0 +1,23 @@
+{
+  "id": "spring-isd-ms-english",
+  "title": "English Teacher, Middle School (2026-2027)",
+  "employer": "Spring Independent School District",
+  "location": "Houston, TX",
+  "school_year": "2026-2027",
+  "employment_type": "Full-time",
+  "category": "English",
+  "summary": "Implement the district instructional program in middle school English. Design effective standards-aligned lessons, monitor student performance with formative and summative assessments, and participate in professional learning communities.",
+  "required_education": ["Bachelor's degree from an accredited college or university"],
+  "required_credentials": ["Valid Texas teaching certificate with required endorsements for English / ELA at the level assigned"],
+  "preferred_experience": ["At least one year of student teaching or approved internship"],
+  "responsibilities": [
+    "Teach in accordance with staff assignment using effective practices.",
+    "Design lessons with immediate and long-range goals and real-world relevance.",
+    "Monitor performance using formative and summative assessments; analyze data.",
+    "Participate in professional learning communities and use technology to enhance instruction.",
+    "Maintain accurate gradebook and attendance records."
+  ],
+  "skills": ["English / ELA content", "Curriculum and instruction", "Data analysis", "Classroom management"],
+  "rubric_hints": ["Texas English / ELA certification for the level assigned", "Data-driven instruction", "Subject knowledge"],
+  "unposting_date": null
+}
