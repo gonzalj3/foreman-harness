@@ -47,7 +47,7 @@ The whole build is **TDD, E2E-first**, so everything is verified working by subm
 | Frontend deploy | **Vercel** |
 | Backend deploy | **Koyeb** (free, no credit card) — switch to **Google Cloud Run** if testing needs it |
 | Observability | **Phoenix** (local dev / sidecar; OTel / OpenLLMetry); OTLP endpoint configurable |
-| Worker (the AI) | `FakeWorker` first → real Claude (`LLMWorker`) |
+| Worker (the AI) | real LLM only — `LLMWorker` (Claude) / `GroqWorker` (Gemma) / `DeepSeekWorker`; tests mock the model |
 | Verifier (the tool) | `FakeCredentialVerifier` → real `TEACredentialVerifier` |
 | Persistence | `Store` interface: filesystem (local) / backend disk or DB (deployed) |
 | Versatility | **Role Profiles** — abstraction built in from the start |
@@ -69,7 +69,7 @@ education_applicant_verifier/    # Python harness core (deployed on Koyeb)
   observability.py OTel/OpenLLMetry tracer → Phoenix; metrics; alarm→span bridge
   events.py       LoopEvent types + bus (UI projection of the same telemetry)
   alarms.py       (4) declared alarm catalog: type -> severity + recommended action
-  worker.py       Worker protocol · FakeWorker · LLMWorker (Claude)
+  worker.py       Worker protocol · LLMWorker (Claude) · GroqWorker · DeepSeekWorker
   verifier.py     CredentialVerifier · FakeCredentialVerifier · TEACredentialVerifier
                   · FoodHandlerVerifier (stretch)
   material.py     (1) applications in -> schema / ranked result out
@@ -154,7 +154,7 @@ suite still passes.
   test green.
 - **Phase 2 — Observability** (~30m): `observability.py` (OTel → Phoenix, alarm→span bridge,
   in-memory exporter for tests), `events.py` bus. *Exit:* span in Phoenix; exporter test green.
-- **Phase 3 — Fakes** (~30m): `FakeWorker` (over-claims on attempt 1, corrects on feedback),
+- **Phase 3 — Test doubles & model mocks** (~30m): mock the model's network call,
   `FakeCredentialVerifier` (valid / expired / not-found / mismatch=fraud / unavailable; counts
   calls). *Exit:* worker revises-on-feedback test green.
 - **Phase 4 — The four pillars** (~60m): `material.py`, `guardrails.py`, `checkpoints.py`.
@@ -177,7 +177,7 @@ suite still passes.
 
 ### Fill in the real parts
 - **Phase 10 — Real Claude worker** (~45m): `LLMWorker` behind the interface; OpenLLMetry
-  captures prompts/tokens/cost into Phoenix. Keep `FakeWorker` for the **live worker-swap bonus**.
+  captures prompts/tokens/cost into Phoenix. Swap Claude / DeepSeek / Gemma live (**bonus**).
   *Exit:* E2E passes with `LLMWorker` on a seeded input.
 - **Phase 11 — Real TEA verifier** (~60m, riskiest): `TEACredentialVerifier` against ECOS
   VirtCert, behind the interface, with caching + `TOOL_UNAVAILABLE` fallback; live-or-fixture

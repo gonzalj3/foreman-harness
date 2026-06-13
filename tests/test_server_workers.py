@@ -13,8 +13,9 @@ def test_each_factory_builds_its_own_model(monkeypatch):
     assert workers["deepseek-v4-flash"]().model == "deepseek-v4-flash"
 
 
-def test_no_keys_only_fakes(monkeypatch):
+def test_no_keys_means_no_workers(monkeypatch):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
-    assert set(server.available_workers()) == {"fake-worker-v1", "strict-fake-worker-v1"}
+    # an LLM is required: no key -> no worker at all (not a fake fallback)
+    assert server.available_workers() == {}

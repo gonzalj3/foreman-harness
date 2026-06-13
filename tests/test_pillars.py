@@ -1,10 +1,9 @@
-"""Per-pillar unit tests: guardrails, checkpoints, worker behavior, alarm catalog."""
+"""Per-pillar unit tests: guardrails, checkpoints, credential gate, alarm catalog."""
 from education_applicant_verifier import alarms, checkpoints, guardrails
 from education_applicant_verifier.alarms import AlarmType
 from education_applicant_verifier.types import (
     Application, CredentialResult, CredStatus, CriterionScore, Failure, Proposal,
 )
-from education_applicant_verifier.worker import FakeWorker
 
 
 def app(**kw):
@@ -65,15 +64,3 @@ def test_credential_gate_maps_statuses():
     assert checkpoints.credential_gate(app(), CredentialResult("TX-1", CredStatus.NOT_FOUND))[0] == "ineligible"
     assert checkpoints.credential_gate(app(), CredentialResult("TX-1", CredStatus.MISMATCH))[0] == "escalate"
     assert checkpoints.credential_gate(app(), CredentialResult("TX-1", CredStatus.UNAVAILABLE))[0] == "escalate"
-
-
-# ---- worker correction behavior ----
-
-def test_worker_revises_when_experience_flagged():
-    w = FakeWorker()
-    a = app(claimed_experience_years=10, document_experience_years=2)
-    first = w.propose(a, ["experience"], [])
-    assert first.claims["experience_years"] == 10
-    feedback = [Failure("UNGROUNDED_CLAIM", "too high", field="experience_years")]
-    second = w.propose(a, ["experience"], feedback)
-    assert second.claims["experience_years"] == 2

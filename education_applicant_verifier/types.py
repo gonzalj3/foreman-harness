@@ -45,6 +45,8 @@ class CredentialResult:
     holder_name: Optional[str] = None
     cert_type: Optional[str] = None
     expires: Optional[str] = None
+    certifications: list[str] = field(default_factory=list)   # certified subject areas (e.g. Mathematics)
+    grade_bands: list[str] = field(default_factory=list)      # certified grade bands (e.g. 4-8)
     raw: dict = field(default_factory=dict)
 
 

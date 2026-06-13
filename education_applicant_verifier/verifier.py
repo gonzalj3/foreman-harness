@@ -161,6 +161,18 @@ class TEACredentialVerifier:
 
     @staticmethod
     def _parse(html_text: str, cert_id: Optional[str]) -> CredentialResult:
+        # subject areas + grade bands come from the certificate table cells (parsed
+        # from raw HTML before tags are stripped).
+        areas: list[str] = []
+        for cell in re.findall(r'<td class="style25"[^>]*>([^<]+)</td>', html_text):
+            a = _html.unescape(cell).strip()
+            if (not a or re.match(r"\d{2}/\d{2}/\d{4}", a) or a in ("Valid", "Expired")
+                    or a.startswith("Grades") or a == "Classroom Teacher"):
+                continue
+            if a not in areas:
+                areas.append(a)
+        grade_bands = sorted(set(re.findall(r"Grades \(([^)]+)\)", html_text)))
+
         text = _html.unescape(re.sub(r"<[^>]+>", " ", html_text))
         text = re.sub(r"\s+", " ", text).strip()
 
@@ -183,4 +195,5 @@ class TEACredentialVerifier:
         else:
             status = CredStatus.NOT_FOUND
 
-        return CredentialResult(cert_id, status, holder_name=holder, cert_type=cert_type, expires=expires)
+        return CredentialResult(cert_id, status, holder_name=holder, cert_type=cert_type,
+                                expires=expires, certifications=areas, grade_bands=grade_bands)

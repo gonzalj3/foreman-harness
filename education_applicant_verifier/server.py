@@ -24,7 +24,7 @@ from .material import from_dict, render
 from .observability import Tracer
 from .profiles import teacher_profile
 from .verifier import FakeCredentialVerifier, TEACredentialVerifier
-from .worker import DeepSeekWorker, FakeWorker, GroqWorker, LLMWorker, StrictFakeWorker
+from .worker import DeepSeekWorker, GroqWorker, LLMWorker
 
 app = FastAPI(title="EducationApplicantVerifier")
 
@@ -41,12 +41,10 @@ _JOBS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _JOB_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 
 def available_workers() -> dict:
-    """Workers offered to the dashboard. Real-model workers appear only when their
-    API key is configured, so the UI never offers a worker that can't run."""
-    workers: dict = {
-        "fake-worker-v1": FakeWorker,
-        "strict-fake-worker-v1": StrictFakeWorker,
-    }
+    """Workers offered to the dashboard — real LLM models only. A model appears only
+    when its API key is configured; with no key there is no worker and the app cannot
+    run a review. An LLM is required by design."""
+    workers: dict = {}
     # bind `m` per-lambda (default arg) — a bare closure would late-bind and make
     # every factory use the last model assigned.
     if os.environ.get("ANTHROPIC_API_KEY"):
@@ -117,9 +115,9 @@ def _candidates() -> list[dict]:
 
 class ReviewRequest(BaseModel):
     applicant: dict
-    worker: str = "fake-worker-v1"
+    worker: str = ""                 # an available model id (no key -> no worker)
     job: dict | None = None          # selected job description (scored against)
-    verifier: str = "fake"           # "tea" for real TEA lookup, "fake" otherwise
+    verifier: str = "tea"            # "tea" for the real TEA lookup
 
 
 @app.get("/health")
@@ -156,7 +154,11 @@ def review(req: ReviewRequest):
                                            "attempt": e.attempt, "data": e.data}))
     tracer = Tracer(bus)
     workers = available_workers()
-    worker_factory = workers.get(req.worker) or FakeWorker
+    worker_factory = workers.get(req.worker)
+    if worker_factory is None:
+        return JSONResponse({"events": [], "spans": [], "outcome": {"decision": "error", "record": {
+            "reason": "No model worker available. Set an API key "
+                      "(ANTHROPIC_API_KEY / DEEPSEEK_API_KEY / GROQ_API_KEY) to enable a worker."}}})
     verifier = TEACredentialVerifier(mode="live") if req.verifier == "tea" else FakeCredentialVerifier()
     harness = Harness(teacher_profile(verifier), worker_factory(), tracer=tracer)
 

@@ -1,11 +1,7 @@
-"""Workers (the AI). Swappable behind the Worker protocol.
-
-FakeWorker is deterministic and offline so the whole harness can be tested at
-zero cost. Crucially it *changes its behavior on feedback*: on the first attempt
-it asserts the applicant's claimed experience (which may exceed what the document
-supports); once a guardrail/checkpoint returns an UNGROUNDED_CLAIM failure, it
-re-proposes using only the document-supported value. This exercises the
-correction loop the challenge grades.
+"""Workers (the AI). Each worker is a thin proposer behind the Worker protocol:
+it returns a Proposal; the harness verifies, gates, and re-prompts it. An LLM is
+required — there is no offline/fake worker (tests mock the model's network call
+against the real worker classes).
 """
 from __future__ import annotations
 
@@ -14,67 +10,6 @@ import os
 import urllib.request
 
 from .types import Application, CriterionScore, Failure, Proposal
-
-
-class FakeWorker:
-    name = "fake-worker-v1"
-
-    def __init__(self) -> None:
-        self.calls = 0
-
-    def propose(
-        self, application: Application, rubric: list[str], prior_failures: list[Failure]
-    ) -> Proposal:
-        self.calls += 1
-
-        experience_was_flagged = any(
-            f.code == "UNGROUNDED_CLAIM" and f.field == "experience_years"
-            for f in prior_failures
-        )
-        years = (
-            application.document_experience_years
-            if experience_was_flagged
-            else application.claimed_experience_years
-        )
-
-        criteria = [
-            CriterionScore(
-                name="experience",
-                score=min(10, years * 2),
-                evidence=f"{years} years of relevant experience indicated in the application",
-            ),
-            CriterionScore(
-                name="fit",
-                score=7,
-                evidence=(application.narrative or "role-relevant background")[:80],
-            ),
-        ]
-        overall = round(sum(c.score for c in criteria) / len(criteria))
-        return Proposal(
-            applicant_id=application.id,
-            overall_score=overall,
-            criteria=criteria,
-            recommendation="advance" if overall >= 6 else "reject",
-            claims={"experience_years": years},
-            rationale=f"Candidate demonstrates {years} years of experience and adequate role fit.",
-        )
-
-
-class StrictFakeWorker(FakeWorker):
-    """A second, stricter worker — used to demonstrate live worker-swap (bonus).
-
-    Same interface; scores fit lower, so rankings differ when swapped in.
-    """
-    name = "strict-fake-worker-v1"
-
-    def propose(self, application, rubric, prior_failures):
-        proposal = super().propose(application, rubric, prior_failures)
-        for c in proposal.criteria:
-            if c.name == "fit":
-                c.score = 5
-        proposal.overall_score = round(sum(c.score for c in proposal.criteria) / len(proposal.criteria))
-        proposal.recommendation = "advance" if proposal.overall_score >= 6 else "reject"
-        return proposal
 
 
 # ---------------------------------------------------------------------------
@@ -89,7 +24,9 @@ def _system_prompt() -> str:
         "Score the applicant against each rubric criterion on a 0-10 scale. "
         "Base every score ONLY on facts stated in the application, and for each "
         "criterion cite the specific text you relied on in 'evidence'. Credit "
-        "'experience_years' only up to what the application supports. Never use "
+        "'experience_years' only up to what the application supports. "
+        "A candidate may only be recommended ('advance') if their verified TEA "
+        "certification covers the job's subject area and grade level. Never use "
         "age, gender, race, or other protected-class reasoning. "
         "Respond with a single JSON object and nothing else."
     )
@@ -115,6 +52,26 @@ def _build_user_prompt(application: Application, rubric: list[str], prior_failur
         parts += [
             "Job description — judge the applicant's FIT against THIS specific role:",
             json.dumps(jd, indent=2),
+            "",
+        ]
+
+    cred = (getattr(application, "metadata", None) or {}).get("credential")
+    if cred:
+        parts += [
+            "Verified TEA certification for this applicant (from the live TEA lookup):",
+            json.dumps({
+                "status": cred.get("status"),
+                "certified_subject_areas": cred.get("certifications"),
+                "certified_grade_bands": cred.get("grade_bands"),
+                "expires": cred.get("expires"),
+            }, indent=2),
+            "",
+            "SUBJECT-MATCH REQUIREMENT: to recommend 'advance', the certified subject "
+            "areas and grade bands above MUST cover this job's subject and grade level. "
+            "If the applicant is not certified in the job's subject (e.g. a Science role "
+            "but no Science certification), treat it as disqualifying: set 'fit' to 3 or "
+            "lower, set recommendation to 'reject', and name the missing certification in "
+            "the evidence and rationale.",
             "",
         ]
 

@@ -22,6 +22,16 @@ def test_real_educator_parses_as_valid():
     assert r.cert_type and "Classroom Teacher" in r.cert_type
 
 
+def test_certified_subject_areas_are_parsed():
+    r = verifier().verify(None, "Adrian Edmonds")
+    # the verifier captures the certified subjects/grades, not just "valid"
+    assert "Mathematics" in r.certifications
+    assert "Generalist" in r.certifications
+    # Adrian is NOT science-certified -> a science role should not match
+    assert not any("Science" in c and "Second Language" not in c for c in r.certifications)
+    assert r.grade_bands  # e.g. 4-8, 7-12
+
+
 def test_unknown_educator_parses_as_not_found():
     r = verifier().verify(None, "Nobody Zzqxbogusname")
     assert r.status == CredStatus.NOT_FOUND

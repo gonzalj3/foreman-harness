@@ -1,31 +1,63 @@
 {
   "id": "harmony-austin-middle-school-science-teacher-26-27",
-  "title": "Teacher Science Middle School",
+  "title": "Teacher-Science Middle School (26-27 School Year)",
   "employer": "Harmony Public Schools",
   "location": "Austin, TX",
   "school_year": "2026-2027",
   "employment_type": "Full-time",
-  "category": "Instructional",
-  "source_url": "https://www.ziprecruiter.com/c/Harmony-Public-Schools/Job/TEACHER-SCIENCE-MIDDLE-SCHOOL-(26-27-SCHOOL-YEAR)/-in-Austin,TX?jid=2bfa4b989df72459&utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic",
-  "source_status": "partial_from_url",
-  "summary": "Middle-school science teacher posting for Harmony Public Schools in Austin for the 2026-2027 school year. The source page was not accessible from this environment because ZipRecruiter returned a bot-protection challenge, so this record intentionally includes only reliable metadata from the provided URL/title.",
-  "compensation": null,
-  "required_education": [],
+  "category": "Science",
+  "source_url": "https://www.linkedin.com",
+  "source_status": "via LinkedIn (posted 26 days ago)",
+  "summary": "JOB GOAL: Plan, organize, and implement an appropriate instructional program in a learning environment that guides and encourages students to develop and fulfill their academic potential - preparing each student to embody the Portrait of a Harmony Graduate: self-directed, passionate, collaborative, resilient, and ambitious. At Harmony Public Schools, advancing student academic achievement is the foundation of every educator's work. Through rigorous instruction and high expectations, teachers ensure students build the knowledge and skills needed for success. Beyond the classroom, interactions such as home visits, mentoring, and after-hours events further reinforce this foundation while cultivating the competencies in the Portrait of a Harmony Graduate: ambitious planning, passion, collaboration, critical thinking, and self-direction.",
+  "required_education": [
+    "Bachelor's Degree from an accredited college or university"
+  ],
   "required_credentials": [],
-  "preferred_credentials": [],
   "preferred_experience": [],
   "responsibilities": [
-    "Teach middle-school science for the 2026-2027 school year."
+    "Understands and supports the mission, vision and values of Harmony Public Schools.",
+    "Models and instills a love of learning.",
+    "Designs and implements appropriate instruction of assigned content area(s) aligned with school standards, curriculum, and student needs.",
+    "Plans, prepares, and delivers lesson plans and instructional materials that maximize student engagement and learning.",
+    "Uses a variety of teaching practices and methodologies that reflect diverse educational, cultural, and linguistic backgrounds to meet individual student needs.",
+    "Instructs and monitors students in the use of learning materials and equipment.",
+    "Uses relevant technology to support and differentiate instruction.",
+    "Conducts tutoring sessions to meet all students' needs.",
+    "Conducts home visits to build stronger relationships with students and families.",
+    "Hosts and mentors student clubs to help students explore passions and leadership skills.",
+    "Attends and assists with after-hours activities such as student celebrations, parent meetings, and campus-hosted events.",
+    "Manages student behavior by establishing and enforcing rules and procedures, and maintains discipline per the school's disciplinary systems.",
+    "Implements a clear, consistent behavior-management system while developing students' character and sense of community.",
+    "Encourages and monitors the progress of individual students and uses that information to adjust teaching strategies.",
+    "Attends department, school, district, and parent meetings; participates in staff development and serves on staff committees.",
+    "Maintains accurate, complete records as required by law and policy; prepares required reports on students and activities.",
+    "Establishes and communicates clear objectives for all learning activities.",
+    "Assigns and grades classwork, homework, tests, and assignments; takes daily attendance.",
+    "Communicates regularly with students, colleagues, and parents regarding student progress and needs.",
+    "Takes reasonable precautions to protect students, equipment, materials, and facilities.",
+    "Performs other duties as assigned."
   ],
   "skills": [
-    "Middle-school science instruction"
+    "Knowledge of curriculum and instruction",
+    "Passion, collaboration, critical thinking, and self-direction",
+    "Effective written and oral communication with all levels, internal and external",
+    "Ability to establish and maintain effective working relationships",
+    "Strong organizational and interpersonal skills",
+    "Proficiency with computer software, district databases, spreadsheets, and word processing",
+    "Ability to analyze data"
+  ],
+  "work_environment": [
+    "Light work: may require occasional light lifting.",
+    "Nights and weekend activities will occasionally be required.",
+    "Classroom setting with intermittent speaking, standing, walking, and writing.",
+    "Moderate travel is required."
   ],
   "rubric_hints": [
-    "Science content knowledge",
-    "Middle-school instructional experience",
-    "Texas educator certification status should be verified if claimed by an applicant"
+    "Texas teaching certification fit (state requirement for public school teachers)",
+    "Middle-school science content knowledge",
+    "Bachelor's degree from an accredited institution",
+    "Family engagement (home visits, mentoring, after-hours events)",
+    "Behavior management and data-driven instruction"
   ],
-  "demo_notes": [
-    "Replace or enrich this record after manually copying the accessible Harmony posting text into the repo."
-  ]
+  "unposting_date": null
 }

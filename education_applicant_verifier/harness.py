@@ -70,7 +70,9 @@ class Harness:
             with t.span("verify_credential", applicant_id=app.id):
                 cred = self.verifier.verify(app.cert_id, app.name)
             t.event(LoopEvent("credential", app.id, data={
-                "status": cred.status.value, "holder": cred.holder_name, "cert_id": cred.cert_id}))
+                "status": cred.status.value, "holder": cred.holder_name, "cert_id": cred.cert_id,
+                "expires": cred.expires, "cert_type": cred.cert_type,
+                "source": "Texas Education Agency (TEA)"}))
 
             # 2. hard-gate
             decision, cred_alarms, reason = checkpoints.credential_gate(app, cred)
@@ -96,6 +98,16 @@ class Harness:
                 if self.store:
                     self.store.put(app, "ineligible", ev)
                 return
+
+            # make the verified credential (subject areas + grade bands) available to
+            # the worker so the model can require a subject/grade match for this job.
+            app.metadata = {**(app.metadata or {}), "credential": {
+                "status": cred.status.value,
+                "certifications": cred.certifications,
+                "grade_bands": cred.grade_bands,
+                "cert_type": cred.cert_type,
+                "expires": cred.expires,
+            }}
 
             # 3-5. eligible -> worker proposes, gated, with bounded correction loop
             failures: list = []

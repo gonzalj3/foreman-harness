@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 const API = import.meta.env.VITE_API_BASE || "http://localhost:8000";
-const STAGES = ["material", "worker", "guardrails", "checkpoint", "decision"] as const;
+const STAGES = ["material", "credential", "worker", "guardrails", "checkpoint", "decision"] as const;
 type StageKey = (typeof STAGES)[number];
 type StageState = { cls: string; txt: string };
 
@@ -18,7 +18,7 @@ export default function App() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [workers, setWorkers] = useState<string[]>([]);
-  const [worker, setWorker] = useState("fake-worker-v1");
+  const [worker, setWorker] = useState("");
 
   const [job, setJob] = useState<Job | null>(null);
   const [cand, setCand] = useState<Candidate | null>(null);
@@ -26,6 +26,7 @@ export default function App() {
   const [stages, setStages] = useState<Record<StageKey, StageState>>(initStages());
   const [log, setLog] = useState<string[]>([]);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [credEvent, setCredEvent] = useState<any>(null);
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,8 +36,7 @@ export default function App() {
         setJobs(j.job_descriptions || []);
         const ws: string[] = j.workers || [];
         setWorkers(ws);
-        const real = ws.find((w) => !w.startsWith("fake") && !w.startsWith("strict"));
-        setWorker(real || ws[0] || "fake-worker-v1");
+        setWorker(ws[0] || "");
       })
       .catch(() => {});
     fetch(`${API}/api/candidates`)
@@ -57,6 +57,7 @@ export default function App() {
     setJob(j);
     setCand(null);
     setOutcome(null);
+    setCredEvent(null);
     setLog([]);
     setStages(initStages());
   }
@@ -64,6 +65,7 @@ export default function App() {
     setJob(null);
     setCand(null);
     setOutcome(null);
+    setCredEvent(null);
     setLog([]);
     setStages(initStages());
   }
@@ -71,6 +73,7 @@ export default function App() {
   async function review(candidate: Candidate) {
     setCand(candidate);
     setOutcome(null);
+    setCredEvent(null);
     setLog([]);
     setStages(initStages());
     setRunning(true);
@@ -94,8 +97,10 @@ export default function App() {
       await sleep(320);
       if (ev.kind === "credential") {
         setStage("material", "ok", "schema ok");
-        setStage("worker", "on", "verify cert: " + ev.data.status);
-        addLog("credential → " + ev.data.status + (ev.data.holder ? ` (${ev.data.holder})` : ""));
+        const ok = ev.data.status === "valid";
+        setStage("credential", ok ? "ok" : "bad", ev.data.status);
+        setCredEvent(ev.data);
+        addLog("TEA credential check → " + ev.data.status + (ev.data.holder ? ` (${ev.data.holder})` : ""));
       } else if (ev.kind === "attempt_started") {
         setStage("worker", "on", "attempt " + ev.attempt);
         addLog("— attempt " + ev.attempt);
@@ -204,6 +209,12 @@ export default function App() {
           {!cand ? (
             <>
               <h2>Candidates</h2>
+              {workers.length === 0 && (
+                <div className="nomodel">
+                  ⚠ No model configured on the backend. Set an API key
+                  (ANTHROPIC_API_KEY / DEEPSEEK_API_KEY / GROQ_API_KEY) to enable reviews — an LLM is required.
+                </div>
+              )}
               {candidates.map((c) => (
                 <button className="cand" key={c.id} onClick={() => review(c)}>
                   <div className="cand-name">{c.name}</div>
@@ -221,6 +232,36 @@ export default function App() {
               <h2>{cand.name}</h2>
               <div className="muted">{cand.role}</div>
               {cand.narrative && <p className="cand-narr">{cand.narrative}</p>}
+
+              {credEvent && (
+                <div
+                  className={
+                    "credbox " +
+                    (credEvent.status === "valid"
+                      ? "ok"
+                      : credEvent.status === "mismatch" || credEvent.status === "unavailable"
+                      ? "warn"
+                      : "bad")
+                  }
+                >
+                  <div className="credbadge">
+                    {credEvent.status === "valid"
+                      ? "✓ CERTIFICATE VERIFIED"
+                      : "✕ " + String(credEvent.status).replace(/_/g, " ").toUpperCase()}
+                  </div>
+                  <div className="credsrc">Checked live against the Texas Education Agency (TEA)</div>
+                  <div className="creddetail">
+                    {credEvent.holder && (
+                      <span>
+                        Holder: <b>{credEvent.holder}</b>
+                      </span>
+                    )}
+                    {credEvent.cert_type && <span> · {credEvent.cert_type}</span>}
+                    {credEvent.cert_id && <span> · ID {credEvent.cert_id}</span>}
+                    {credEvent.expires && <span> · expires {credEvent.expires}</span>}
+                  </div>
+                </div>
+              )}
 
               {outcome ? (
                 <div className="verdict-card">

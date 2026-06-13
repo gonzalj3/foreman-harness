@@ -1,4 +1,7 @@
-"""CLI entrypoint: run the harness over a folder/file of applications with fakes."""
+"""CLI entrypoint: run the harness over a folder/file of applications.
+
+Requires a model API key — an LLM worker is mandatory (no fake worker exists).
+"""
 from __future__ import annotations
 
 import argparse
@@ -10,7 +13,18 @@ from .harness import Harness
 from .material import load_applications, render
 from .profiles import teacher_profile
 from .verifier import FakeCredentialVerifier
-from .worker import FakeWorker
+from .worker import DeepSeekWorker, GroqWorker, LLMWorker
+
+
+def _build_worker():
+    """Pick a worker from whichever model API key is set; None if no key."""
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        return LLMWorker()
+    if os.environ.get("DEEPSEEK_API_KEY"):
+        return DeepSeekWorker()
+    if os.environ.get("GROQ_API_KEY"):
+        return GroqWorker()
+    return None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -19,12 +33,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true", help="print full JSON result")
     args = parser.parse_args(argv)
 
+    worker = _build_worker()
+    if worker is None:
+        print("No model API key set. Set ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, or "
+              "GROQ_API_KEY — an LLM worker is required.", file=sys.stderr)
+        return 1
+
     path = args.path
     if os.path.isdir(path):
         path = os.path.join(path, "applications.json")
 
     apps = load_applications(path)
-    harness = Harness(teacher_profile(FakeCredentialVerifier()), FakeWorker())
+    harness = Harness(teacher_profile(FakeCredentialVerifier()), worker)
     result = harness.run(apps)
     rendered = render(result)
 
