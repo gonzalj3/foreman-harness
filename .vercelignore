@@ -1,0 +1,9 @@
+ui
+tests
+*.pdf
+*.rtf
+_*.png
+harness_planning.html
+.pytest_cache
+__pycache__
+.git

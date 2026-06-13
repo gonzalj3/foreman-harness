@@ -1,4 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }]
+  "experimentalServices": {
+    "web": {
+      "type": "web",
+      "entrypoint": "education_applicant_verifier/server.py",
+      "routePrefix": "/"
+    }
+  }
 }
