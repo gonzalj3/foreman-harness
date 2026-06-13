@@ -146,6 +146,16 @@ def candidates():
     return {"candidates": _candidates()}
 
 
+@app.get("/api/evals")
+def evals():
+    """Precomputed gold-set eval results so the site can compare models."""
+    try:
+        with open(os.path.join(_JOB_DIR, "eval_results.json")) as f:
+            return json.load(f)
+    except Exception:
+        return {"models": [], "scores": {}, "cases": []}
+
+
 @app.post("/api/review")
 def review(req: ReviewRequest):
     bus = EventBus()

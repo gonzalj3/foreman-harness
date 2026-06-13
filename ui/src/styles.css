@@ -48,6 +48,19 @@ code { font-family: Menlo, Consolas, monospace; }
 .job-meta { color: var(--mut); font-size: 12px; margin-top: 2px; }
 .job-fill { color: var(--ink); font-size: 12px; margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
 
+/* ---------- Model eval scorecard ---------- */
+.evals { margin-top: 28px; border-top: 1px solid var(--line); padding-top: 18px; }
+.evals h2 { font-size: 15px; font-weight: 800; }
+.eval-scores { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+.eval-score { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; font-size: 13px; }
+.eval-score b { color: var(--red); font-size: 15px; }
+.eval-tablewrap { overflow-x: auto; }
+.eval-table { width: 100%; border-collapse: collapse; font-size: 12px; background: #fff; }
+.eval-table th, .eval-table td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; white-space: nowrap; }
+.eval-table th { background: #f3f4f6; font-weight: 700; }
+.eval-table td.ev-ok { color: var(--ok); font-weight: 700; }
+.eval-table td.ev-bad { color: var(--bad); font-weight: 700; }
+
 /* ---------- Detail view ---------- */
 .detail { min-height: 100vh; display: flex; flex-direction: column; }
 .detailbar { display: flex; align-items: center; gap: 14px; padding: 12px 18px; border-bottom: 1px solid var(--line); background: #fff; position: sticky; top: 0; z-index: 5; }

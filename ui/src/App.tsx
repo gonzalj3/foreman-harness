@@ -19,6 +19,7 @@ export default function App() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [workers, setWorkers] = useState<string[]>([]);
   const [worker, setWorker] = useState("");
+  const [evals, setEvals] = useState<any>(null);
 
   const [job, setJob] = useState<Job | null>(null);
   const [cand, setCand] = useState<Candidate | null>(null);
@@ -42,6 +43,10 @@ export default function App() {
     fetch(`${API}/api/candidates`)
       .then((r) => r.json())
       .then((j) => setCandidates(j.candidates || []))
+      .catch(() => {});
+    fetch(`${API}/api/evals`)
+      .then((r) => r.json())
+      .then(setEvals)
       .catch(() => {});
   }, []);
 
@@ -171,6 +176,54 @@ export default function App() {
             </button>
           ))}
         </div>
+
+        {evals?.cases?.length > 0 && (
+          <div className="evals">
+            <h2>Model eval — which model judges best</h2>
+            <div className="sub">
+              Each model is scored against a gold set whose correct answer comes from the
+              candidate's real TEA certification. Last run: {evals.generated_at}
+            </div>
+            <div className="eval-scores">
+              {evals.models.map((m: string) => (
+                <span className="eval-score" key={m}>
+                  {m} <b>{evals.scores[m].passed}/{evals.scores[m].total}</b>
+                </span>
+              ))}
+            </div>
+            <div className="eval-tablewrap">
+              <table className="eval-table">
+                <thead>
+                  <tr>
+                    <th>Candidate</th>
+                    <th>Job</th>
+                    <th>Expected</th>
+                    {evals.models.map((m: string) => (
+                      <th key={m}>{m}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {evals.cases.map((c: any, i: number) => (
+                    <tr key={i}>
+                      <td>{c.candidate}</td>
+                      <td>{c.job}</td>
+                      <td>{c.expected}</td>
+                      {evals.models.map((m: string) => {
+                        const r = c.models?.[m];
+                        return (
+                          <td key={m} className={r ? (r.pass ? "ev-ok" : "ev-bad") : ""}>
+                            {r ? `${r.pass ? "✓" : "✗"} ${r.got}` : "—"}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
