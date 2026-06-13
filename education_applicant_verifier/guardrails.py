@@ -7,6 +7,8 @@ implicit" means.
 """
 from __future__ import annotations
 
+import re
+
 from . import alarms
 from .alarms import AlarmType
 from .types import Application, CheckResult, Failure, Proposal
@@ -39,7 +41,8 @@ def check(proposal: Proposal, application: Application, config: dict | None = No
 
     # 2. No protected-class / biased language anywhere in the evaluation.
     text = " ".join([proposal.rationale] + [c.evidence for c in proposal.criteria]).lower()
-    hits = [t for t in BANNED_TERMS if t in text]
+    # whole-word / whole-phrase match so "old" doesn't fire inside "household"
+    hits = [t for t in BANNED_TERMS if re.search(r"\b" + re.escape(t) + r"\b", text)]
     if hits:
         failures.append(Failure("BIASED_LANGUAGE", f"Protected-class / biased language: {hits}"))
         raised.append(alarms.raise_alarm(AlarmType.BIAS_DETECTED, application.id, {"terms": hits}))

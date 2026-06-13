@@ -47,13 +47,13 @@ def available_workers() -> dict:
         "strict-fake-worker-v1": StrictFakeWorker,
     }
     if os.environ.get("ANTHROPIC_API_KEY"):
-        model = os.environ.get("CLAUDE_MODEL", "claude-opus-4-8")
+        model = os.environ.get("CLAUDE_MODEL", "claude-haiku-4-5")
         workers[model] = lambda: LLMWorker(model)
     if os.environ.get("GROQ_API_KEY"):
         model = os.environ.get("GROQ_MODEL", "gemma2-9b-it")
         workers[model] = lambda: GroqWorker(model)
     if os.environ.get("DEEPSEEK_API_KEY"):
-        model = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+        model = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-flash")
         workers[model] = lambda: DeepSeekWorker(model)
     return workers
 

@@ -148,7 +148,8 @@ class LLMWorker:
     """Claude worker (Anthropic SDK). Default model: Opus 4.8 (configurable)."""
 
     def __init__(self, model: str | None = None) -> None:
-        self.model = model or os.environ.get("CLAUDE_MODEL", "claude-opus-4-8")
+        # Cheapest Claude tier by default (user-selected); override with CLAUDE_MODEL.
+        self.model = model or os.environ.get("CLAUDE_MODEL", "claude-haiku-4-5")
         self.name = self.model
         self.calls = 0
         self._client = None
@@ -232,4 +233,4 @@ class DeepSeekWorker(_OpenAICompatibleWorker):
     URL = "https://api.deepseek.com/chat/completions"
     KEY_ENV = "DEEPSEEK_API_KEY"
     MODEL_ENV = "DEEPSEEK_MODEL"
-    DEFAULT_MODEL = "deepseek-chat"
+    DEFAULT_MODEL = "deepseek-v4-flash"  # cheapest tier; deepseek-v4-pro via DEEPSEEK_MODEL
