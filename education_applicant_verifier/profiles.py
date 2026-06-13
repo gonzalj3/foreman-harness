@@ -32,3 +32,10 @@ def teacher_profile(verifier: CredentialVerifier) -> RoleProfile:
         pass_score=6,
         max_attempts=3,
     )
+
+
+def teacher_profile_tea(mode: str = "auto", fixture_dir: str | None = None) -> RoleProfile:
+    """Teacher profile backed by the real TEA VirtCert verifier."""
+    from .verifier import TEACredentialVerifier
+
+    return teacher_profile(TEACredentialVerifier(mode=mode, fixture_dir=fixture_dir))
