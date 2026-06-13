@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: Letter; margin: 0.5in 0.55in; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: #1a1d23; font-size: 9.4px; line-height: 1.34;
+  }
+  .head { border-bottom: 2.5px solid #c0392b; padding-bottom: 5px; margin-bottom: 7px; }
+  .title { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; color: #18202b; }
+  .title span { color: #c0392b; }
+  .sub { font-size: 9.8px; color: #3a4150; margin-top: 2px; }
+  .meta { font-size: 7.8px; color: #6b7280; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .meta b { color: #c0392b; }
+
+  pre.ascii {
+    font-family: "SFMono-Regular", "Menlo", "Consolas", monospace;
+    font-size: 8.7px; line-height: 1.28; color: #20262e;
+    background: #f7f8fa; border: 1px solid #e2e5ea; border-radius: 6px;
+    padding: 9px 10px; margin: 7px 0 9px; white-space: pre; overflow: hidden;
+  }
+
+  .grid { display: grid; grid-template-columns: 1.32fr 1fr; gap: 13px; }
+  h2 { font-size: 9.4px; text-transform: uppercase; letter-spacing: 0.6px; color: #c0392b;
+       border-bottom: 1px solid #e2e5ea; padding-bottom: 2px; margin-bottom: 4px; }
+  .pillar { margin-bottom: 5px; }
+  .pillar .n { font-weight: 800; color: #18202b; }
+  .pillar .tag { font-size: 7.3px; background: #f3e6e4; color: #c0392b; padding: 0.5px 4px;
+                 border-radius: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+  .pillar .d { color: #3a4150; }
+  .pillar .ex { color: #6b7280; font-style: italic; }
+
+  ul { list-style: none; }
+  li { position: relative; padding-left: 9px; margin-bottom: 2.5px; color: #2a313c; }
+  li::before { content: "▪"; position: absolute; left: 0; color: #c0392b; }
+  li b { color: #18202b; }
+  .foot { margin-top: 7px; padding-top: 5px; border-top: 1px solid #e2e5ea;
+          font-size: 8px; color: #6b7280; display: flex; justify-content: space-between; gap: 10px; }
+  .foot b { color: #18202b; }
+</style>
+</head>
+<body>
+
+  <div class="head">
+    <div class="title">Harness Planning Document — <span>Foreman</span></div>
+    <div class="sub">A harness that supervises a swappable AI worker doing <b>job-application review</b>. The worker only
+      <i>proposes</i> an evaluation; the harness normalizes input, enforces declared guardrails, gates every output through
+      pass/fail checkpoints, raises structured alarms, and persists each step — so constraint-handling is invisible to the agent.</div>
+    <div class="meta">Domain: Hiring &nbsp;·&nbsp; hourly school roles (custodian / cafeteria) &nbsp;|&nbsp; Author: <b>gonzalj3</b>
+      &nbsp;|&nbsp; Event: Fired Festival · 24-Hour Build Challenge &nbsp;|&nbsp; <b>Agent = Model + Harness</b></div>
+  </div>
+
+<pre class="ascii">
+    INPUTS ── 20 applications  +  10 gold examples (define the rubric)
+       │
+       ▼
+  ┌──────────────────────────────  FOREMAN  HARNESS  ──────────────────────────────┐
+  │  everything around the worker — the agent is FULLY SWAPPABLE                    │
+  │                                                                                │
+  │    ① MATERIAL IN     normalize messy files (PDF / scan / email) → clean schema  │
+  │           │                                                                    │
+  │           ▼                                                                    │
+  │       WORKER  ──────▶  proposes an evaluation   ( no I/O · no authority )       │
+  │           │  ▲                                                                  │
+  │           ▼  │                                                                  │
+  │    ② GUARDRAILS ────▶  declared rules; BLOCK bad output before it ships         │
+  │           │  │                                                                  │
+  │           ▼  │                                                                  │
+  │    ③ CHECKPOINT ────▶  pass / fail   + persist (replayable from any checkpoint) │
+  │       pass│  │✗ fail → worker REVISES the same applicant                        │
+  │           │  └─────── (bounded; else → HUMAN-IN-LOOP)                           │
+  │           ▼                                                                     │
+  │    MATERIAL OUT ────▶  deterministic ranking  (harness sorts, not the LLM)      │
+  │                                                                                │
+  │    ④ ALARMS ── structured: type · severity · context · recommended action      │
+  │        BIAS_DETECTED · HALLUCINATED_QUALIFICATION · MISSING_HARD_REQ · ANOMALY  │
+  └────────────────────────────────────────────────────────────────────────────────┘
+       │
+       ▼
+    OUTPUT ── ranked shortlist  +  evidence  +  audit trail
+</pre>
+
+  <div class="grid">
+    <div>
+      <h2>The Four Pillars — distinct modules, separate from the worker</h2>
+      <div class="pillar"><span class="n">① Material handling</span> <span class="tag">clean I/O</span>
+        <span class="d">— heterogeneous applications (PDF / scan / email) normalized to one canonical schema in; ranked decisions + audit trail out. The worker never touches raw files or APIs.</span></div>
+      <div class="pillar"><span class="n">② Guardrails</span> <span class="tag">declared</span>
+        <span class="d">— config-declared limits the worker can't bypass: no protected-class reasoning; every score must cite source evidence; <b>no qualification credited that isn't in the document</b>; hard-requirement gate (cert, background-check eligibility, work auth, availability); PII redaction.</span>
+        <span class="ex">e.g. worker writes "young, energetic" → blocked before output ships.</span></div>
+      <div class="pillar"><span class="n">③ Checkpoints</span> <span class="tag">pass / fail · persisted</span>
+        <span class="d">— explicit gates per applicant: schema valid · every criterion scored with citation · calibrated (not all-7s) · hard-gate computed. Results persisted → replay from any checkpoint.</span></div>
+      <div class="pillar"><span class="n">④ Alarms</span> <span class="tag">structured</span>
+        <span class="d">— named type + severity + context + recommended action; monitor the whole loop and drive escalation (e.g. <b>HALLUCINATED_QUALIFICATION</b> → critical → block + human review).</span></div>
+    </div>
+
+    <div>
+      <h2>The loop (what's graded)</h2>
+      <ul>
+        <li><b>Per-applicant correction loop:</b> worker proposes → guardrails + checkpoint gate → on fail the <b>specific failure is returned</b> and the worker <b>revises that one applicant</b> until it passes or escalates. This is the MUST: behavior changes on feedback.</li>
+        <li><b>Score absolutely, rank deterministically:</b> each applicant evaluated independently; the <b>harness</b> (not the LLM) sorts — pairwise tie-break only for the borderline cluster.</li>
+        <li><b>Calibration:</b> the 10 gold examples run as a regression set; drift fires an alarm.</li>
+      </ul>
+      <h2>Should / Bonus</h2>
+      <ul>
+        <li><b>Swappable agent</b> interface — zero agent-specific code in the harness; <b>swap a 2nd model live</b> (bonus).</li>
+        <li><b>Persist &amp; replay</b> from any checkpoint forward.</li>
+        <li><b>Human-in-the-loop</b> escalation on block / severity ≥ high.</li>
+      </ul>
+      <h2>Stack &amp; deploy</h2>
+      <ul>
+        <li><b>Python</b> harness core + <b>TypeScript</b> dashboard (live checkpoints / alarms); deployed URL for demo.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span><b>Out of scope (future):</b> recruitment-marketing / ad-spend loop with budget arbitration — noted in HARNESS.md to keep the build tight.</span>
+    <span><b>Foreman</b> · v0.1</span>
+  </div>
+
+</body>
+</html>
